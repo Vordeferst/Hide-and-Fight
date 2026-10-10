@@ -1,0 +1,2590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hide and Fight</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: #060303;
+    background-image: radial-gradient(ellipse at 50% 45%, #1a0406 0%, #080203 60%, #000 100%);
+    font-family: 'Special Elite', 'Courier New', monospace;
+    color: #b8a89a;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 999;
+    opacity: .11;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 998;
+    background: repeating-linear-gradient(0deg,
+      rgba(0,0,0,.35) 0px, rgba(0,0,0,.35) 1px,
+      transparent 1px, transparent 4px);
+    opacity: .5;
+  }
+
+  .game-wrap {
+    width: 100%; max-width: 560px;
+    min-height: 710px;
+    background: #0a0505;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(90,10,15,.18) 0%, transparent 55%),
+      linear-gradient(180deg, #0d0505 0%, #050202 100%);
+    border: 1px solid #1e0a0c;
+    border-radius: 2px;
+    box-shadow:
+      0 0 50px rgba(60,8,10,.4),
+      0 40px 100px rgba(0,0,0,.95),
+      inset 0 0 80px rgba(0,0,0,.9);
+    padding: 26px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-wrap::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 100px rgba(0,0,0,.95);
+    border-radius: 2px;
+    z-index: 3;
+  }
+
+  .version {
+    position: absolute;
+    right: 12px; bottom: 10px;
+    font-size: 10px; letter-spacing: 2px;
+    color: #4a3630; text-transform: uppercase;
+    font-weight: 700; z-index: 1001;
+    pointer-events: none;
+  }
+
+  .toast {
+    position: absolute;
+    left: 50%; bottom: 60px;
+    transform: translate(-50%, 20px);
+    background: #1a0306;
+    border: 1px solid #6a1018;
+    color: #e8c8c8;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 2px;
+    box-shadow: 0 0 20px rgba(140,15,25,.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, transform .3s;
+    z-index: 2000;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.error { border-color: #b01828; color: #ffb8c0; }
+  .toast.good  { border-color: #4a8a5a; color: #b8ffc8; }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 658px;
+    gap: 16px;
+    position: relative;
+    z-index: 2;
+  }
+  .screen.active { display: flex; animation: fade .55s ease; }
+
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  h1, h2 { font-family: 'Creepster', 'Impact', fantasy; font-weight: 400; letter-spacing: 2px; }
+  h2 { font-size: 26px; }
+
+  .sub { font-size: 11px; letter-spacing: 5px; color: #7a5f52; text-transform: uppercase; }
+  .hint { font-size: 13px; line-height: 1.55; color: #7a6558; max-width: 360px; }
+
+  .btn {
+    border: 1px solid #3a0e12;
+    cursor: pointer;
+    font: inherit; font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-size: 13px;
+    padding: 15px 42px;
+    background: #140508;
+    color: #d8c0b0;
+    border-radius: 2px;
+    transition: .18s;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover { background: #20080c; border-color: #6a1018; color: #fff; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .3; cursor: not-allowed; }
+
+  .btn.primary {
+    background: linear-gradient(180deg, #2a080c 0%, #140406 100%);
+    border-color: #6a1018;
+    color: #e8c8c8;
+    text-shadow: 0 0 6px rgba(180,30,40,.4);
+  }
+  .btn.primary:hover {
+    background: linear-gradient(180deg, #400c14 0%, #20060a 100%);
+    box-shadow: 0 0 18px rgba(140,20,30,.4);
+  }
+
+  .btn.ghost {
+    padding: 11px 24px;
+    font-size: 11.5px;
+    letter-spacing: 2px;
+    background: transparent;
+    border-color: #2a1018;
+    color: #907878;
+  }
+  .btn.ghost:hover { color: #e8c8c8; border-color: #6a1018; background: #140508; }
+
+  .btn.danger {
+    background: linear-gradient(180deg, #4a0408 0%, #1e0204 100%);
+    border: 1px solid #b01828;
+    color: #f0c8cc;
+    padding: 12px 28px;
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    box-shadow: 0 0 14px rgba(180,20,40,.3);
+  }
+  .btn.danger:disabled { opacity: .35; box-shadow: none; }
+
+  /* ============ LOADING ============ */
+  #screen-loading { gap: 26px; }
+
+  .load-logo {
+    width: 120px; height: 120px;
+    filter: drop-shadow(0 0 18px rgba(140,15,25,.55));
+    animation: loadPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes loadPulse {
+    0%,100% { transform: scale(1); opacity: .85; }
+    50%     { transform: scale(1.06); opacity: 1; }
+  }
+
+  .load-bar {
+    width: 78%; max-width: 320px; height: 4px;
+    background: #1a0306;
+    border: 1px solid #2a080c;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .load-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #5a0810, #b01828, #5a0810);
+    background-size: 200% 100%;
+    animation: barFlow 1.4s linear infinite;
+    transition: width .1s linear;
+    box-shadow: 0 0 12px rgba(180,25,40,.6);
+  }
+  @keyframes barFlow { to { background-position: -200% 0; } }
+
+  .load-status {
+    font-size: 12px; color: #6a4a3a;
+    letter-spacing: 3px; text-transform: uppercase;
+    min-height: 16px;
+  }
+
+  .vordeferst {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 60px; letter-spacing: 6px;
+    color: #b01828;
+    text-shadow:
+      1px 1px 0 #150305,
+      2px 2px 0 #150305,
+      0 0 34px rgba(180,25,40,.75),
+      0 0 60px rgba(140,15,25,.5);
+    opacity: 0;
+    transform: scale(1.35);
+    filter: blur(6px);
+    transition: none;
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+    line-height: 1;
+  }
+  .vordeferst.show { animation: vordeReveal 2.6s ease-out forwards; }
+  @keyframes vordeReveal {
+    0%   { opacity: 0; transform: scale(1.35); filter: blur(6px); }
+    18%  { opacity: 1; transform: scale(1);   filter: blur(0); }
+    70%  { opacity: 1; transform: scale(1);   filter: blur(0); }
+    100% { opacity: 0; transform: scale(.9);  filter: blur(4px); }
+  }
+
+  /* ============ NICKNAME SCREEN ============ */
+  #screen-nickname { gap: 20px; padding: 0 6px; }
+
+  .nick-logo {
+    width: 84px; height: 84px;
+    filter: drop-shadow(0 0 20px rgba(140,15,25,.7));
+    animation: loadPulse 2.4s ease-in-out infinite;
+  }
+
+  .nick-title {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 40px;
+    letter-spacing: 4px;
+    color: #b01828;
+    text-shadow:
+      1px 1px 0 #150305,
+      2px 2px 0 #150305,
+      0 0 24px rgba(180,25,40,.7);
+    line-height: 1;
+    text-align: center;
+  }
+
+  .nick-sub {
+    font-size: 12px;
+    color: #7a6558;
+    letter-spacing: 2px;
+    line-height: 1.6;
+    max-width: 300px;
+    text-align: center;
+    font-style: italic;
+  }
+
+  .nick-input-wrap {
+    width: 100%;
+    max-width: 320px;
+    position: relative;
+    margin-top: 4px;
+  }
+
+  #nick-input {
+    width: 100%;
+    background: #050202;
+    border: 1px solid #3a0810;
+    color: #e8d0d0;
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 22px;
+    letter-spacing: 3px;
+    padding: 16px 18px;
+    border-radius: 2px;
+    text-align: center;
+    text-transform: uppercase;
+    -webkit-appearance: none;
+    transition: .2s;
+  }
+  #nick-input::placeholder {
+    color: #4a3630;
+    letter-spacing: 2px;
+    font-size: 16px;
+    font-style: normal;
+    font-family: 'Special Elite', monospace;
+  }
+  #nick-input:focus {
+    outline: none;
+    border-color: #6a1018;
+    box-shadow: 0 0 18px rgba(140,15,25,.55);
+  }
+  #nick-input.shake {
+    animation: nickShake .4s ease;
+  }
+  @keyframes nickShake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .nick-rules {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #5a4038;
+    text-transform: uppercase;
+  }
+
+  /* ============ MENU ============ */
+  #screen-menu { gap: 14px; }
+
+  .logo { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+
+  .logo-svg {
+    width: 92px; height: 92px;
+    filter: drop-shadow(0 0 14px rgba(100,10,20,.7));
+    transition: filter .35s;
+  }
+  .logo-svg.scary {
+    filter: drop-shadow(0 0 26px rgba(255,20,40,.9)) drop-shadow(0 0 50px rgba(180,10,25,.6));
+    animation: scaryJitter .12s steps(2) infinite;
+  }
+  @keyframes scaryJitter {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    50%  { transform: translate(-1px, 1px) rotate(-1deg); }
+    100% { transform: translate(1px, -1px) rotate(1deg); }
+  }
+
+  .title {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 54px; letter-spacing: 5px;
+    color: #7a0a14;
+    text-shadow:
+      1px 1px 0 #150305,
+      2px 2px 0 #150305,
+      0 0 24px rgba(140,15,25,.5);
+    line-height: 1; text-align: center;
+  }
+
+  .tagline {
+    font-size: 11px; letter-spacing: 6px;
+    color: #6a4a3a; text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .menu-nickname {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #0a0304;
+    border: 1px solid #3a0810;
+    border-radius: 99px;
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 20px;
+    letter-spacing: 2.5px;
+    color: #d0404e;
+    cursor: pointer;
+    transition: .2s;
+    -webkit-tap-highlight-color: transparent;
+    text-shadow: 0 0 10px rgba(200,25,45,.35);
+  }
+  .menu-nickname:hover {
+    border-color: #6a1018;
+    background: #150608;
+    color: #ff5a6e;
+    box-shadow: 0 0 16px rgba(180,20,40,.4);
+    transform: translateY(-1px);
+  }
+  .menu-nickname:active { transform: translateY(0) scale(.98); }
+  .menu-nickname svg {
+    width: 14px; height: 14px;
+    stroke: currentColor;
+    opacity: .7;
+    flex-shrink: 0;
+  }
+
+  .stats-bar { display: flex; gap: 8px; }
+  .stat-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: #0a0304;
+    border: 1px solid #2a080c;
+    padding: 8px 14px;
+    border-radius: 2px;
+    font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    transition: .2s;
+  }
+  .stat-chip svg { width: 16px; height: 16px; }
+  .stat-chip.coins { color: #a88820; border-color: #3a2808; }
+  .stat-chip.exp   { color: #906a90; border-color: #2e1a30; }
+  .stat-chip .val { color: #d8c0b0; }
+
+  .stat-chip.clickable {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stat-chip.clickable:hover {
+    border-color: #a88820;
+    background: #150704;
+    box-shadow: 0 0 14px rgba(200,160,40,.35);
+    transform: translateY(-1px);
+  }
+  .stat-chip.clickable:active {
+    transform: translateY(0) scale(.97);
+  }
+  .stat-chip.clickable::after {
+    content: '+';
+    font-size: 14px;
+    color: #a88820;
+    opacity: .55;
+    margin-left: 2px;
+    font-weight: 800;
+    transition: .2s;
+  }
+  .stat-chip.clickable:hover::after {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  .menu-buttons { display: flex; flex-direction: column; gap: 9px; width: 100%; max-width: 320px; }
+  .menu-buttons .btn { width: 100%; }
+  .menu-row { display: flex; gap: 9px; }
+  .menu-row .btn { flex: 1; padding: 12px 0; font-size: 11.5px; letter-spacing: 1.8px; }
+
+  .save-info {
+    font-size: 10px;
+    color: #5a4038;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.6;
+  }
+
+  /* ============ SEARCH ============ */
+  .spinner {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    border: 2px solid rgba(100,15,20,.18);
+    border-top-color: #7a0a14;
+    border-right-color: #a01828;
+    animation: spin 1.4s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .dots::after { content: ''; animation: dots 1.4s steps(4, end) infinite; }
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+
+  /* ============ VS ============ */
+  .vs-block {
+    display: flex; align-items: center; justify-content: center;
+    gap: 18px; width: 100%; margin: 4px 0;
+  }
+  .fighter { display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+
+  .avatar-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, #150608 0%, #050202 85%);
+    border: 1px solid #2a080c;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: inset 0 0 30px rgba(0,0,0,.9);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .avatar-circle svg { width: 88%; height: 88%; }
+  .avatar-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar-circle.me {
+    border-color: #3a1018;
+    box-shadow: inset 0 0 30px rgba(0,0,0,.9), 0 0 12px rgba(80,15,25,.3);
+  }
+  .avatar-circle.enemy {
+    border-color: #4a0a14;
+    box-shadow: inset 0 0 30px rgba(0,0,0,.9), 0 0 14px rgba(120,15,25,.35);
+  }
+
+  .avatar-unknown {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 62px; color: #5a3038;
+    text-shadow: 0 0 18px rgba(140,15,25,.55);
+    line-height: 1;
+    animation: unknownPulse 2.4s ease-in-out infinite;
+    user-select: none;
+  }
+  @keyframes unknownPulse {
+    0%,100% { opacity: .75; text-shadow: 0 0 18px rgba(140,15,25,.55); }
+    50%     { opacity: 1;   text-shadow: 0 0 28px rgba(200,25,45,.85); }
+  }
+
+  .fighter-nick {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 18px; letter-spacing: 2px;
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fighter-nick.me { color: #b8a090; }
+  .fighter-nick.me.unknown { color: #6a4a3a; font-style: italic; }
+  .fighter-nick.enemy { color: #c8404e; }
+
+  .fighter-hero {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #6a4a3a;
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .vs-mark {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 32px; color: #7a0a14;
+    text-shadow: 1px 1px 0 #150305;
+    letter-spacing: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ============ ROLE ============ */
+  .role-tag {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 11px 22px;
+    background: #0a0304;
+    border: 1px solid #3a0810;
+    border-radius: 2px;
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 22px; letter-spacing: 3px;
+    animation: pop .5s cubic-bezier(.2,1.2,.4,1);
+  }
+  .role-tag.hider  { color: #6ac888; border-color: #163a1e; }
+  .role-tag.seeker { color: #d0404e; border-color: #4a0810; }
+  .role-tag svg { width: 24px; height: 24px; }
+
+  @keyframes pop {
+    0%   { transform: scale(.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ============ GAME ============ */
+  #screen-game { justify-content: flex-start; gap: 14px; padding-top: 4px; }
+
+  .hud {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 8px;
+    min-height: 72px; justify-content: center;
+  }
+  #hud-opponent {
+    font-size: 11px; letter-spacing: 3px;
+    color: #6a4a3a; text-transform: uppercase;
+  }
+  #hud-opponent b { color: #c8404e; font-family: 'Creepster', fantasy; font-size: 15px; letter-spacing: 2px; font-weight: 400; }
+  #hud-status { font-size: 15px; font-weight: 600; line-height: 1.4; color: #b8a89a; }
+
+  .room { display: flex; gap: 8px; width: 100%; }
+
+  .spot {
+    flex: 1;
+    background: linear-gradient(180deg, #120608 0%, #060203 100%);
+    border: 1px solid #2a080c;
+    border-radius: 2px;
+    padding: 22px 4px 16px;
+    cursor: pointer;
+    color: #907878;
+    font: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    transition: .18s;
+    user-select: none;
+    position: relative;
+    min-width: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .spot:hover {
+    border-color: #6a1018; color: #e8c8c8;
+    background: linear-gradient(180deg, #1e080c 0%, #0a0203 100%);
+  }
+  .spot:active { transform: scale(.98); }
+  .spot svg { width: 36px; height: 36px; }
+  .spot-name {
+    font-size: 10px; letter-spacing: 1.2px;
+    text-transform: uppercase; opacity: .75; line-height: 1.15;
+    word-break: break-word;
+  }
+
+  .spot.checked {
+    opacity: .2;
+    filter: grayscale(1) brightness(.4);
+    pointer-events: none;
+  }
+  .spot.me {
+    border-color: #1a3a20; color: #6ac888;
+    background: linear-gradient(180deg, #081408 0%, #040804 100%);
+    box-shadow: inset 0 0 20px rgba(40,120,60,.15);
+  }
+  .spot.found {
+    border-color: #b01828; color: #e8c0c4;
+    background: linear-gradient(180deg, #200208 0%, #0a0103 100%);
+    box-shadow: inset 0 0 24px rgba(140,20,35,.3);
+    animation: shake .4s;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-7px); }
+    75% { transform: translateX(7px); }
+  }
+
+  .log {
+    margin-top: auto;
+    font-size: 12px; color: #7a6558;
+    min-height: 18px; letter-spacing: .5px; font-style: italic;
+  }
+
+  .ability-bar { width: 100%; display: flex; justify-content: center; }
+
+  /* ============ RESULT ============ */
+  .result-icon {
+    width: 118px; height: 118px;
+    display: flex; align-items: center; justify-content: center;
+    animation: pop .5s cubic-bezier(.2,1.2,.4,1);
+  }
+  .result-icon svg { width: 100%; height: 100%; }
+  .result-icon.win  { color: #90b890; }
+  .result-icon.lose { color: #b01828; }
+
+  #result-title {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 42px; letter-spacing: 6px;
+  }
+  #result-title.win  { color: #6ac888; text-shadow: 1px 1px 0 #0a180c; }
+  #result-title.lose { color: #b01828; text-shadow: 1px 1px 0 #150305; }
+
+  .reward {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    margin-top: 2px;
+  }
+  .reward-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: #0a0304;
+    border: 1px solid #2a080c;
+    border-radius: 2px;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 1px;
+    animation: pop .5s cubic-bezier(.2,1.2,.4,1) backwards;
+  }
+  .reward-chip:nth-child(1) { animation-delay: .1s; }
+  .reward-chip:nth-child(2) { animation-delay: .2s; }
+  .reward-chip.coins { color: #a88820; border-color: #3a2808; }
+  .reward-chip.exp   { color: #906a90; border-color: #2e1a30; }
+  .reward-chip svg { width: 15px; height: 15px; }
+
+  /* ============ PANELS ============ */
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; gap: 10px;
+  }
+  .panel-head h2 {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 32px; letter-spacing: 3px;
+    color: #7a0a14; text-shadow: 1px 1px 0 #150305;
+  }
+
+  .shop-grid {
+    display: flex; flex-direction: column; gap: 12px;
+    width: 100%; overflow-y: auto;
+    padding: 2px; max-height: 470px;
+  }
+  .shop-grid::-webkit-scrollbar { width: 4px; }
+  .shop-grid::-webkit-scrollbar-thumb { background: #3a0810; border-radius: 2px; }
+
+  /* ============ PROMO ============ */
+  .promo-section {
+    width: 100%;
+    background: linear-gradient(135deg, #100406 0%, #050202 100%);
+    border: 1px solid #2a080c;
+    border-radius: 2px;
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .promo-section::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: #a88820;
+    box-shadow: 0 0 10px rgba(200,160,40,.5);
+  }
+  .promo-title {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #a88820;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .promo-title svg { width: 20px; height: 20px; }
+  .promo-desc {
+    font-size: 11px;
+    color: #7a6558;
+    line-height: 1.5;
+    letter-spacing: .5px;
+  }
+  .promo-row {
+    display: flex; gap: 8px;
+  }
+  .promo-row input {
+    flex: 1;
+    background: #050202;
+    border: 1px solid #3a0810;
+    color: #d8c0b0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    padding: 11px 14px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    min-width: 0;
+    -webkit-appearance: none;
+  }
+  .promo-row input::placeholder { color: #4a3630; letter-spacing: 2px; }
+  .promo-row input:focus {
+    outline: none;
+    border-color: #6a1018;
+    box-shadow: 0 0 10px rgba(140,15,25,.4);
+  }
+  .promo-row .btn {
+    padding: 11px 20px;
+    font-size: 11px;
+    letter-spacing: 1.8px;
+    white-space: nowrap;
+  }
+  .promo-hint {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #5a4038;
+    text-transform: uppercase;
+  }
+
+  /* ============ DONATE CTA ============ */
+  .donate-cta {
+    display: flex; gap: 12px; align-items: center;
+    background: linear-gradient(135deg, #150608 0%, #050202 100%);
+    border: 1px solid #3a0810;
+    border-radius: 2px;
+    padding: 14px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: .2s;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .donate-cta::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, #a88820, #7a0a14);
+    box-shadow: 0 0 12px rgba(200,160,40,.5);
+  }
+  .donate-cta:hover {
+    border-color: #6a1018;
+    background: linear-gradient(135deg, #1e0810 0%, #080203 100%);
+  }
+  .donate-cta:active { transform: scale(.99); }
+  .donate-cta .donate-icon {
+    width: 52px; height: 52px; flex-shrink: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #2a1a05 0%, #0a0502 85%);
+    border: 1px solid #4a3208;
+    display: flex; align-items: center; justify-content: center;
+    color: #a88820;
+    box-shadow: inset 0 0 20px rgba(0,0,0,.9), 0 0 12px rgba(200,160,40,.2);
+  }
+  .donate-cta .donate-icon svg { width: 34px; height: 34px; filter: drop-shadow(0 0 6px rgba(200,160,40,.6)); }
+  .donate-cta .donate-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .donate-cta .donate-label {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 22px; letter-spacing: 2px;
+    color: #d0404e; line-height: 1;
+  }
+  .donate-cta .donate-sub {
+    font-size: 10.5px;
+    color: #7a6558;
+    letter-spacing: 1px;
+    line-height: 1.4;
+  }
+  .donate-cta .donate-arrow {
+    font-size: 24px;
+    color: #a88820;
+    line-height: 1;
+    opacity: .8;
+    flex-shrink: 0;
+  }
+
+  /* ============ HERO CARD ============ */
+  .hero-card {
+    display: flex; gap: 14px; align-items: center;
+    background: linear-gradient(135deg, #100406 0%, #050202 100%);
+    border: 1px solid #2a080c;
+    border-radius: 2px;
+    padding: 14px;
+    text-align: left;
+    transition: .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: #7a0a14;
+  }
+  .hero-card.owned::before { background: #4a8a5a; }
+  .hero-card.active {
+    border-color: #3a6a48;
+    background: linear-gradient(135deg, #081408 0%, #040804 100%);
+  }
+
+  .hero-avatar {
+    width: 82px; height: 82px; flex-shrink: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, #150608 0%, #050202 85%);
+    border: 1px solid #2a080c;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: inset 0 0 22px rgba(0,0,0,.9);
+  }
+  .hero-avatar svg { width: 92%; height: 92%; }
+  .hero-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .hero-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .hero-name {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 22px; letter-spacing: 2px;
+    color: #d0404e; line-height: 1;
+  }
+  .hero-role-tag {
+    font-size: 10px; letter-spacing: 2.5px;
+    text-transform: uppercase; color: #7a6558;
+  }
+  .hero-role-tag.hider { color: #6ac888; }
+  .hero-desc { font-size: 11.5px; color: #7a6558; line-height: 1.45; margin-top: 3px; }
+  .hero-action { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .hero-action .btn { padding: 10px 14px; font-size: 11px; letter-spacing: 1.5px; white-space: nowrap; }
+
+  .price-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 14px; font-weight: 800; color: #a88820;
+    letter-spacing: 1px;
+  }
+  .price-tag svg { width: 14px; height: 14px; }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 60px 20px; text-align: center;
+  }
+  .empty-state .empty-icon {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 72px;
+    color: #3a2028;
+    text-shadow: 0 0 20px rgba(140,15,25,.3);
+    line-height: 1;
+  }
+  .empty-state .empty-text {
+    font-size: 13px; letter-spacing: 2px;
+    color: #6a4a3a; text-transform: uppercase;
+  }
+
+  /* ============ DONATE SCREEN ============ */
+  #screen-donate { justify-content: flex-start; padding-top: 10px; gap: 14px; }
+
+  .donate-intro {
+    font-size: 12px;
+    color: #7a6558;
+    line-height: 1.6;
+    letter-spacing: .5px;
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .donate-list {
+    display: flex; flex-direction: column; gap: 12px;
+    width: 100%; overflow-y: auto;
+    padding: 2px; max-height: 470px;
+  }
+  .donate-list::-webkit-scrollbar { width: 4px; }
+  .donate-list::-webkit-scrollbar-thumb { background: #3a0810; border-radius: 2px; }
+
+  .donate-card {
+    display: flex; gap: 14px; align-items: center;
+    background: linear-gradient(135deg, #150608 0%, #050202 100%);
+    border: 1px solid #3a0810;
+    border-radius: 2px;
+    padding: 16px;
+    text-align: left;
+    transition: .2s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .donate-card:hover {
+    border-color: #6a1018;
+    background: linear-gradient(135deg, #1e0810 0%, #080203 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(100,10,20,.4);
+  }
+  .donate-card:active {
+    transform: translateY(0) scale(.99);
+  }
+  .donate-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, #a88820, #7a0a14);
+    box-shadow: 0 0 12px rgba(200,160,40,.5);
+  }
+
+  .donate-card .donate-icon {
+    width: 66px; height: 66px; flex-shrink: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #2a1a05 0%, #0a0502 85%);
+    border: 1px solid #4a3208;
+    display: flex; align-items: center; justify-content: center;
+    color: #a88820;
+    box-shadow: inset 0 0 20px rgba(0,0,0,.9), 0 0 12px rgba(200,160,40,.2);
+  }
+  .donate-card .donate-icon svg { width: 44px; height: 44px; filter: drop-shadow(0 0 6px rgba(200,160,40,.6)); }
+
+  .donate-info { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .donate-amount {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 26px; letter-spacing: 2px;
+    color: #d0404e;
+    line-height: 1;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .donate-amount svg { width: 22px; height: 22px; color: #a88820; }
+  .donate-prices {
+    display: flex; gap: 10px; align-items: center;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #7a6558;
+  }
+  .donate-prices .price-usd { color: #a88820; font-weight: 700; }
+  .donate-prices .price-rub { color: #906a90; font-weight: 700; }
+  .donate-prices .sep { opacity: .4; }
+  .donate-tag {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5a4038;
+  }
+  .donate-buy {
+    align-self: flex-start;
+    padding: 9px 14px !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
+    pointer-events: none;
+  }
+
+  /* ============ MODAL ============ */
+  .modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.8);
+    z-index: 1500;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.show { display: flex; animation: fade .25s ease; }
+
+  .modal {
+    background: #0a0304;
+    border: 1px solid #3a0810;
+    padding: 22px;
+    border-radius: 2px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 0 40px rgba(140,15,25,.4);
+    display: flex; flex-direction: column; gap: 14px;
+    text-align: center;
+  }
+  .modal h3 {
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 26px; letter-spacing: 3px;
+    color: #b01828;
+    text-shadow: 1px 1px 0 #150305;
+  }
+  .modal p {
+    font-size: 12px; color: #7a6558;
+    line-height: 1.6; text-align: left;
+  }
+  .modal p b { color: #a88820; }
+  .modal p.center { text-align: center; }
+  .modal textarea {
+    width: 100%;
+    height: 110px;
+    background: #050202;
+    border: 1px solid #3a0810;
+    color: #b8a89a;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 2px;
+    resize: none;
+    word-break: break-all;
+    line-height: 1.5;
+    -webkit-appearance: none;
+  }
+  .modal textarea:focus {
+    outline: none;
+    border-color: #6a1018;
+    box-shadow: 0 0 10px rgba(140,15,25,.4);
+  }
+  .modal-actions {
+    display: flex; gap: 8px;
+    justify-content: center;
+  }
+  .modal-actions .btn {
+    padding: 10px 20px;
+    font-size: 11px; letter-spacing: 1.8px;
+    flex: 1;
+  }
+
+  .tg-link-wrap { text-align: center; padding: 8px 0; }
+  .tg-link {
+    display: inline-block;
+    font-family: 'Creepster', 'Impact', fantasy;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: #7aa2ff;
+    text-decoration: none;
+    padding: 14px 28px;
+    border: 1px solid #3a4a80;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #0a1020 0%, #050810 100%);
+    box-shadow: 0 0 20px rgba(100,140,255,.35);
+    text-shadow: 0 0 12px rgba(120,160,255,.7);
+    transition: .2s;
+  }
+  .tg-link:hover {
+    background: linear-gradient(180deg, #101830 0%, #0a1020 100%);
+    box-shadow: 0 0 30px rgba(120,160,255,.7);
+    color: #d0e0ff;
+  }
+
+  /* ============================================================
+     MOBILE
+     ============================================================ */
+  @media (max-width: 560px) {
+    body { padding: 0; align-items: stretch; }
+
+    .game-wrap {
+      padding: 20px 14px;
+      border-radius: 0;
+      border: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: visible;
+      padding-top: calc(20px + env(safe-area-inset-top));
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      padding-left: calc(14px + env(safe-area-inset-left));
+      padding-right: calc(14px + env(safe-area-inset-right));
+    }
+
+    .screen {
+      min-height: calc(100vh - 80px);
+      min-height: calc(100dvh - 80px);
+    }
+    #screen-game { min-height: auto; }
+
+    .title { font-size: 42px; letter-spacing: 3px; }
+    .tagline { letter-spacing: 4px; font-size: 10px; }
+    .panel-head h2 { font-size: 26px; }
+
+    .nick-title { font-size: 32px; letter-spacing: 3px; }
+    .nick-sub { font-size: 11px; }
+    #nick-input { font-size: 20px; padding: 14px 16px; }
+
+    .menu-nickname { font-size: 17px; padding: 7px 14px; }
+
+    .stat-chip { font-size: 12px; padding: 6px 11px; gap: 5px; }
+    .stat-chip svg { width: 14px; height: 14px; }
+
+    .hero-card {
+      flex-wrap: wrap;
+      padding: 12px;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .hero-avatar { width: 68px; height: 68px; }
+    .hero-info { flex: 1; min-width: 0; }
+    .hero-name { font-size: 19px; letter-spacing: 1.5px; }
+    .hero-role-tag { font-size: 9px; letter-spacing: 2px; }
+    .hero-desc { font-size: 11px; line-height: 1.4; margin-top: 2px; }
+    .hero-action {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: stretch;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hero-action .btn {
+      flex: 1 1 auto;
+      min-width: 110px;
+      padding: 12px 10px;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-align: center;
+    }
+    .hero-action > div:not(.btn) {
+      flex: 1 1 auto;
+      min-width: 110px;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 11px !important;
+      letter-spacing: 1.5px !important;
+    }
+
+    .promo-row { flex-direction: column; gap: 8px; }
+    .promo-row .btn { width: 100%; padding: 13px 20px; }
+    .promo-row input { font-size: 15px; padding: 13px 14px; }
+
+    .donate-cta { padding: 12px; gap: 10px; }
+    .donate-cta .donate-label { font-size: 19px; }
+    .donate-cta .donate-sub { font-size: 10px; }
+    .donate-cta .donate-icon { width: 44px; height: 44px; }
+    .donate-cta .donate-icon svg { width: 28px; height: 28px; }
+
+    .donate-card {
+      flex-wrap: wrap;
+      padding: 12px;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .donate-card .donate-icon { width: 54px; height: 54px; }
+    .donate-card .donate-icon svg { width: 34px; height: 34px; }
+    .donate-info { flex: 1; min-width: 0; }
+    .donate-amount { font-size: 22px; }
+    .donate-amount svg { width: 18px; height: 18px; }
+    .donate-prices { font-size: 11px; gap: 8px; }
+    .donate-buy {
+      width: 100%;
+      padding: 12px 14px !important;
+      font-size: 11px !important;
+      letter-spacing: 1.8px !important;
+      align-self: stretch !important;
+      text-align: center;
+    }
+
+    .menu-row .btn { padding: 13px 0; font-size: 11px; letter-spacing: 1.5px; }
+    .menu-buttons .btn.primary { padding: 17px 0; font-size: 14px; }
+
+    .avatar-circle { width: 82px; height: 82px; }
+    .fighter-nick { font-size: 15px; letter-spacing: 1.5px; }
+    .fighter-hero { font-size: 9px; letter-spacing: 1.5px; }
+    .vs-mark { font-size: 24px; letter-spacing: 1px; }
+    .vs-block { gap: 10px; }
+
+    .room { gap: 5px; }
+    .spot { padding: 14px 2px 10px; gap: 7px; border-radius: 3px; }
+    .spot svg { width: 26px; height: 26px; }
+    .spot-name { font-size: 8px; letter-spacing: .5px; line-height: 1.15; padding: 0 1px; }
+
+    .role-tag { font-size: 19px; padding: 10px 18px; letter-spacing: 2px; }
+    .role-tag svg { width: 20px; height: 20px; }
+
+    #hud-status { font-size: 14px; }
+    #hud-opponent b { font-size: 14px; }
+
+    #result-title { font-size: 34px; letter-spacing: 4px; }
+    .result-icon { width: 96px; height: 96px; }
+
+    .modal { padding: 18px; max-width: 100%; }
+    .modal h3 { font-size: 22px; letter-spacing: 2px; }
+    .modal p { font-size: 11.5px; }
+    .modal textarea { font-size: 11px; height: 100px; }
+    .modal-actions .btn { padding: 12px 14px; font-size: 10.5px; letter-spacing: 1.5px; }
+    .tg-link { font-size: 22px; padding: 12px 22px; letter-spacing: 2px; }
+
+    .shop-grid { max-height: 65vh; }
+    .donate-list { max-height: 60vh; }
+
+    .load-logo { width: 100px; height: 100px; }
+    .vordeferst { font-size: 44px; letter-spacing: 4px; }
+
+    .toast { bottom: 24px; font-size: 11px; padding: 11px 18px; letter-spacing: 1.5px; }
+
+    .version { right: 8px; bottom: 6px; font-size: 9px; }
+  }
+
+  @media (max-width: 380px) {
+    .title { font-size: 34px; letter-spacing: 2px; }
+    .logo-svg { width: 76px; height: 76px; }
+    .nick-title { font-size: 26px; letter-spacing: 2px; }
+    .nick-logo { width: 66px; height: 66px; }
+    #nick-input { font-size: 18px; padding: 13px 14px; }
+    .avatar-circle { width: 68px; height: 68px; }
+    .fighter-nick { font-size: 13px; }
+    .fighter-hero { font-size: 8px; }
+    .vs-mark { font-size: 20px; }
+    .hero-avatar { width: 58px; height: 58px; }
+    .hero-name { font-size: 17px; }
+    .hero-desc { font-size: 10.5px; }
+    .hero-action .btn { font-size: 10px; padding: 11px 8px; min-width: 95px; }
+    .donate-card .donate-icon { width: 46px; height: 46px; }
+    .donate-card .donate-icon svg { width: 30px; height: 30px; }
+    .donate-amount { font-size: 19px; }
+    .donate-prices { font-size: 10px; flex-wrap: wrap; }
+    .spot svg { width: 22px; height: 22px; }
+    .spot-name { font-size: 7.5px; }
+    #result-title { font-size: 28px; }
+    .vordeferst { font-size: 36px; letter-spacing: 3px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-wrap" id="game-wrap">
+
+  <!-- ===== LOADING ===== -->
+  <section class="screen active" id="screen-loading">
+    <div class="load-logo" id="load-logo"></div>
+    <div class="load-bar"><div class="load-bar-fill" id="load-fill"></div></div>
+    <p class="load-status" id="load-status">Booting…</p>
+    <div class="vordeferst" id="vordeferst">Vordeferst</div>
+  </section>
+
+  <!-- ===== NICKNAME ===== -->
+  <section class="screen" id="screen-nickname">
+    <div class="nick-logo" id="nick-logo"></div>
+    <div class="nick-title" id="nick-title">WHAT'S YOUR NAME?</div>
+    <p class="nick-sub" id="nick-sub">The darkness must know who it hunts tonight…</p>
+    <div class="nick-input-wrap">
+      <input id="nick-input" type="text" maxlength="16" placeholder="ENTER NICKNAME"
+             autocomplete="off" spellcheck="false" autocapitalize="characters" />
+    </div>
+    <p class="nick-rules">3–16 characters · letters, numbers, _ -</p>
+    <button class="btn primary" id="btn-nick-confirm">CONFIRM</button>
+  </section>
+
+  <!-- ===== MENU ===== -->
+  <section class="screen" id="screen-menu">
+    <div class="logo">
+      <div class="logo-svg" id="logo-icon"></div>
+      <div class="title">HIDE and FIGHT</div>
+      <p class="tagline">— survive or die —</p>
+    </div>
+
+    <div class="menu-nickname" id="menu-nickname" title="Click to change nickname">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      <span id="menu-nickname-text">PLAYER</span>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-chip coins clickable" id="menu-coins-chip" title="Get more coins">
+        <span id="coin-icon"></span>
+        <span class="val" id="stat-coins">0</span>
+      </div>
+      <div class="stat-chip exp">
+        <span id="exp-icon"></span>
+        <span class="val" id="stat-exp">0.0</span>
+        <span style="opacity:.5; font-weight:600;">XP</span>
+      </div>
+    </div>
+
+    <div class="menu-buttons">
+      <button class="btn primary" id="btn-play">▶ PLAY</button>
+      <div class="menu-row">
+        <button class="btn ghost" id="btn-shop">SHOP</button>
+        <button class="btn ghost" id="btn-inventory">INVENTORY</button>
+      </div>
+      <div class="menu-row">
+        <button class="btn ghost" id="btn-export">↗ EXPORT</button>
+        <button class="btn ghost" id="btn-import">↙ IMPORT</button>
+      </div>
+    </div>
+
+    <p class="save-info">
+      Save code can be stored in Telegram Saved Messages — paste it back after any update.
+    </p>
+  </section>
+
+  <!-- ===== SEARCH ===== -->
+  <section class="screen" id="screen-search">
+    <div class="spinner"></div>
+    <h2 style="color:#7a0a14; text-shadow:1px 1px 0 #150305;">Searching for opponent<span class="dots"></span></h2>
+    <p class="hint" style="opacity:.35;">Someone is already on your trail…</p>
+  </section>
+
+  <!-- ===== VS + ROLE ===== -->
+  <section class="screen" id="screen-role">
+    <p class="sub" style="letter-spacing:6px; color:#6a4a3a;">OPPONENT FOUND</p>
+
+    <div class="vs-block">
+      <div class="fighter">
+        <div class="avatar-circle me" id="vs-my-avatar"></div>
+        <div class="fighter-nick me" id="vs-my-nick">—</div>
+        <div class="fighter-hero" id="vs-my-hero">—</div>
+      </div>
+      <div class="vs-mark">VS</div>
+      <div class="fighter">
+        <div class="avatar-circle enemy" id="vs-enemy-avatar"></div>
+        <div class="fighter-nick enemy" id="vs-enemy-nick">—</div>
+        <div class="fighter-hero" id="vs-enemy-hero">—</div>
+      </div>
+    </div>
+
+    <div class="role-tag" id="role-tag"></div>
+    <p class="hint" id="role-desc"></p>
+  </section>
+
+  <!-- ===== GAME ===== -->
+  <section class="screen" id="screen-game">
+    <div class="hud">
+      <div id="hud-opponent"></div>
+      <div id="hud-status">—</div>
+    </div>
+
+    <div class="ability-bar" id="ability-bar" style="display:none;">
+      <button class="btn danger" id="btn-shoot">SHOOT · 40%</button>
+    </div>
+
+    <div class="room" id="room"></div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <!-- ===== RESULT ===== -->
+  <section class="screen" id="screen-result">
+    <div class="result-icon" id="result-icon"></div>
+    <h2 id="result-title">—</h2>
+    <p class="hint" id="result-desc"></p>
+    <div class="reward" id="reward-box"></div>
+    <button class="btn primary" id="btn-again">PLAY AGAIN</button>
+    <button class="btn ghost" id="btn-menu">MAIN MENU</button>
+  </section>
+
+  <!-- ===== SHOP ===== -->
+  <section class="screen" id="screen-shop">
+    <div class="panel-head">
+      <h2>SHOP</h2>
+      <div class="stat-chip coins clickable" id="shop-coins-chip" style="font-size:12px; padding:6px 12px;" title="Get more coins">
+        <span id="shop-coin-icon"></span>
+        <span class="val" id="shop-coins">0</span>
+      </div>
+    </div>
+    <div class="shop-grid" id="shop-grid"></div>
+    <button class="btn ghost" id="btn-shop-back">← BACK</button>
+  </section>
+
+  <!-- ===== INVENTORY ===== -->
+  <section class="screen" id="screen-inventory">
+    <div class="panel-head">
+      <h2>INVENTORY</h2>
+    </div>
+    <div class="shop-grid" id="inv-grid"></div>
+    <button class="btn ghost" id="btn-inv-back">← BACK</button>
+  </section>
+
+  <!-- ===== DONATE ===== -->
+  <section class="screen" id="screen-donate">
+    <div class="panel-head">
+      <h2>DONATE</h2>
+      <div class="stat-chip coins" style="font-size:12px; padding:6px 12px;">
+        <span id="donate-coin-icon"></span>
+        <span class="val" id="donate-coins">0</span>
+      </div>
+    </div>
+    <p class="donate-intro">
+      Support the developer and fuel the darkness. Redeem promo codes or choose a pack to buy via Telegram.
+    </p>
+    <div class="donate-list" id="donate-list"></div>
+    <button class="btn ghost" id="btn-donate-back">← BACK</button>
+  </section>
+
+  <!-- ===== SAVE MODAL ===== -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="version">v 0.1.0</div>
+
+</div>
+
+<script>
+/* ============================================================
+   ICONS
+   ============================================================ */
+const ICONS = {
+  logo: `<svg viewBox="0 0 80 80" fill="none">
+    <circle cx="40" cy="40" r="38" fill="#0a0204" stroke="#2a0810" stroke-width="1"/>
+    <circle cx="33" cy="33" r="20" stroke="#7a0a14" stroke-width="4" fill="none"/>
+    <path d="M48 48l18 18" stroke="#7a0a14" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="28" cy="30" r="2.2" fill="#b01828"/>
+    <circle cx="38" cy="30" r="2.2" fill="#b01828"/>
+    <path d="M26 40q7 5 14 0" stroke="#5a0810" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </svg>`,
+  logoScary: `<svg viewBox="0 0 80 80" fill="none">
+    <circle cx="40" cy="40" r="38" fill="#0a0204" stroke="#3a0810" stroke-width="1"/>
+    <circle cx="33" cy="33" r="20" stroke="#8b0000" stroke-width="4" fill="#120305"/>
+    <circle cx="33" cy="33" r="20" stroke="#ff1a3d" stroke-width="1" fill="none" opacity=".55"/>
+    <path d="M48 48l18 18" stroke="#8b0000" stroke-width="7" stroke-linecap="round"/>
+    <path d="M48 48l18 18" stroke="#ff1a3d" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>
+    <path d="M21 30 L29 33 L21 36 Z" fill="#ff1a3d"/>
+    <path d="M45 30 L37 33 L45 36 Z" fill="#ff1a3d"/>
+    <circle cx="26" cy="33" r="1.4" fill="#ffd0d8"/>
+    <circle cx="40" cy="33" r="1.4" fill="#ffd0d8"/>
+    <path d="M22 42 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3"
+          stroke="#8b0000" stroke-width="1.8" fill="none" stroke-linejoin="miter"/>
+    <path d="M22 45 v6" stroke="#8b0000" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M42 45 v4" stroke="#8b0000" stroke-width="1.3" stroke-linecap="round"/>
+    <circle cx="22" cy="52" r="1.3" fill="#8b0000"/>
+    <circle cx="42" cy="50" r="1" fill="#8b0000"/>
+    <path d="M12 60 v4" stroke="#8b0000" stroke-width="1.1" stroke-linecap="round"/>
+  </svg>`,
+  wardrobe: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="6" width="30" height="36" rx="1"/>
+    <path d="M24 6v36"/>
+    <circle cx="19" cy="24" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="29" cy="24" r="1.5" fill="currentColor" stroke="none"/>
+  </svg>`,
+  bed: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 10v30"/>
+    <rect x="6" y="28" width="34" height="9" rx="1"/>
+    <rect x="10" y="21" width="11" height="7" rx="1"/>
+    <path d="M40 37v4"/>
+  </svg>`,
+  curtain: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 9h38"/>
+    <path d="M9 9c0 9 3 17 2 32"/>
+    <path d="M17 9c1 11-2 21-1 32"/>
+    <path d="M31 9c-1 11 2 21 1 32"/>
+    <path d="M39 9c0 9-3 17-2 32"/>
+  </svg>`,
+  box: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 16l18-9 18 9v20l-18 9-18-9z"/>
+    <path d="M6 16l18 9 18-9"/>
+    <path d="M24 25v20"/>
+  </svg>`,
+  hider: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="22" r="9.5"/>
+    <circle cx="28" cy="20.5" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="36" cy="20.5" r="1.6" fill="currentColor" stroke="none"/>
+    <path d="M16 54v-3a12 12 0 0 1 12-12h8a12 12 0 0 1 12 12v3"/>
+  </svg>`,
+  seeker: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="27" cy="27" r="17"/>
+    <path d="M39 39l16 16"/>
+    <circle cx="27" cy="27" r="7" fill="currentColor" fill-opacity=".2"/>
+  </svg>`,
+  trophy: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 10h24v13a12 12 0 0 1-24 0V10z"/>
+    <path d="M20 15h-7a7 7 0 0 0 7 7"/>
+    <path d="M44 15h7a7 7 0 0 1-7 7"/>
+    <path d="M32 35v9"/>
+    <path d="M24 52h16"/>
+    <path d="M28 44h8v8h-8z"/>
+  </svg>`,
+  skull: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 7c-11.6 0-21 8.4-21 19.4 0 6.4 2.6 10.6 6.4 13.6V47a4 4 0 0 0 4 4h21.2a4 4 0 0 0 4-4v-7c3.8-3 6.4-7.2 6.4-13.6C53 15.4 43.6 7 32 7z"/>
+    <circle cx="24" cy="27" r="4.2" fill="currentColor" stroke="none"/>
+    <circle cx="40" cy="27" r="4.2" fill="currentColor" stroke="none"/>
+    <path d="M29 38h6l-3 5z" fill="currentColor" stroke="none"/>
+  </svg>`,
+  coin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M9 9h4.5a2 2 0 0 1 0 4H9"/>
+    <path d="M12 7v10"/>
+  </svg>`,
+  star: `<svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z"/>
+  </svg>`,
+  ticket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 7h16v3a2 2 0 0 1 0 4v3H4v-3a2 2 0 0 1 0-4V7z"/>
+    <path d="M9 7v10" stroke-dasharray="1 3"/>
+    <path d="M12.5 10h4M12.5 13h3"/>
+  </svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 21s-7-4.35-9-9a5.5 5.5 0 0 1 9-6 5.5 5.5 0 0 1 9 6c-2 4.65-9 9-9 9z"/>
+  </svg>`
+};
+
+/* ============================================================
+   FIGHTER TEMPLATE
+   ============================================================ */
+function buildFighterSVG({ hoodColor, edgeColor, eyeColor, weapon = '' }) {
+  const id = hoodColor.replace('#','') + edgeColor.replace('#','');
+  return `<svg viewBox="0 0 64 64" fill="none">
+    <defs>
+      <linearGradient id="cloak_${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${hoodColor}"/>
+        <stop offset="1" stop-color="#040104"/>
+      </linearGradient>
+      <linearGradient id="steel_${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2a1218"/>
+        <stop offset="1" stop-color="#080205"/>
+      </linearGradient>
+    </defs>
+    <path d="M32 16c-9 0-16 7-16 17v20l4 7h24l4-7V33c0-10-7-17-16-17z"
+          fill="url(#cloak_${id})" stroke="${edgeColor}" stroke-width="1"/>
+    <path d="M32 6c-12 0-18 9-18 19 0 3 1 6 3 8l3-3c0-9 5-15 12-15s12 6 12 15l3 3c2-2 3-5 3-8 0-10-6-19-18-19z"
+          fill="${hoodColor}" stroke="${edgeColor}" stroke-width="1"/>
+    <ellipse cx="32" cy="27" rx="8.5" ry="10.5" fill="#000"/>
+    <ellipse cx="28" cy="25.5" rx="1.8" ry="1.2" fill="${eyeColor}"/>
+    <ellipse cx="36" cy="25.5" rx="1.8" ry="1.2" fill="${eyeColor}"/>
+    <ellipse cx="28" cy="25.5" rx=".6" ry=".4" fill="#f0d0d0"/>
+    <ellipse cx="36" cy="25.5" rx=".6" ry=".4" fill="#f0d0d0"/>
+    ${weapon.replace(/steel_1a0612/g, 'steel_' + id)}
+  </svg>`;
+}
+
+const WEAPONS = {
+  rifle: `
+    <path d="M6 52 L18 46 L18 50 L8 55 Z" fill="url(#steel_1a0612)" stroke="#4a0a14" stroke-width=".5"/>
+    <path d="M16 48 L46 32 L48 36 L18 51 Z" fill="url(#steel_1a0612)" stroke="#4a0a14" stroke-width=".5"/>
+    <path d="M44 34 L62 24 L63 26 L45 36 Z" fill="#080205" stroke="#4a0a14" stroke-width=".4"/>
+    <ellipse cx="35" cy="36" rx="5" ry="2" transform="rotate(-30 35 36)" fill="#080205" stroke="#5a1428" stroke-width=".5"/>
+    <rect x="34" y="42" width="3.5" height="6" transform="rotate(-30 36 45)" fill="#080205" stroke="#4a0a14" stroke-width=".4"/>
+    <ellipse cx="22" cy="46" rx="3.5" ry="2.6" fill="#1a0612" stroke="#4a0810" stroke-width=".5"/>
+    <ellipse cx="40" cy="34" rx="3" ry="2.2" fill="#1a0612" stroke="#4a0810" stroke-width=".5"/>
+  `,
+  knife: `
+    <path d="M14 54 L20 50 L20 53 L15 56 Z" fill="#1a0612" stroke="#4a0a14" stroke-width=".4"/>
+    <path d="M20 50 L22 48 L46 22 L48 24 L24 50 Z" fill="url(#steel_1a0612)" stroke="#4a0a14" stroke-width=".5"/>
+    <path d="M46 22 L52 15 L54 17 L48 24 Z" fill="#c8c8d0" stroke="#4a0a14" stroke-width=".3"/>
+    <ellipse cx="20" cy="52" rx="3.2" ry="2.4" fill="#1a0612" stroke="#4a0810" stroke-width=".5"/>
+    <ellipse cx="34" cy="38" rx="3" ry="2.2" fill="#1a0612" stroke="#4a0810" stroke-width=".5"/>
+  `
+};
+
+/* ============================================================
+   HEROES
+   ============================================================ */
+const DORED_SVG_FALLBACK = buildFighterSVG({
+  hoodColor: '#1a0612', edgeColor: '#4a0810', eyeColor: '#b01828', weapon: WEAPONS.rifle
+});
+const DORED_SVG_DATAURI = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(DORED_SVG_FALLBACK);
+
+const AVATAR_DORED = `<img src="Dored.png" alt="Dored"
+  onerror="this.onerror=null;this.src='${DORED_SVG_DATAURI}';" />`;
+
+const HEROES = {
+  dored: {
+    id: 'dored',
+    name: 'Dored',
+    role: 'Sniper',
+    roleKey: 'hider',
+    desc: 'A cold-blooded guy who lived through the darkness… 40% chance of a successful shot!',
+    price: 350,
+    avatar: AVATAR_DORED,
+    ability: 'shot'
+  }
+};
+
+const SHOP_ORDER = ['dored'];
+
+/* ============================================================
+   PROMO CODES
+   ============================================================ */
+const PROMO_CODES = {};
+
+[
+  'DARK100','SHADOW100','GHOST100','NIGHT100','FEAR100',
+  'BLOOD100','BONE100','VOID100','CRYPT100','GRAVE100',
+  'TOMB100','CURSE100','HEX100','RITUAL100','ALTAR100',
+  'CANDLE100','MIRROR100','DOLL100','CLOWN100','MASK100',
+  'KNIFE100','BLADE100','EDGE100','DUSK100','DAWN100',
+  'HAZE100','SMOKE100','ASH100','EMBER100','FLINT100',
+  'RUST100','IRON100','STEEL100'
+].forEach(code => {
+  PROMO_CODES[code] = { coins: 100, exp: 0, msg: 'A dark whisper grants you 100 coins' };
+});
+
+[
+  'BLOODMOON500','NIGHTFALL500','SHADOW500','REAPER500','PHANTOM500',
+  'WRAITH500','SPECTER500','BANSHEE500','GHOUL500','VAMPIRE500',
+  'WEREWOLF500','DEMON500','DEVIL500','SATAN500','HELL500',
+  'ABYSS500','PIT500','CHASM500','DEPTHS500','UNDERWORLD500',
+  'LIMBO500','PURGATORY500','INFERNO500','HADES500','STYX500',
+  'CHARON500','CERBERUS500','MEDUSA500','HYDRA500','CHIMERA500',
+  'MINOTAUR500','GORGON500','TITAN500'
+].forEach(code => {
+  PROMO_CODES[code] = { coins: 500, exp: 0, msg: 'The abyss pays you 500 coins' };
+});
+
+[
+  'VORDEFERST','HIDEANDFIGHT','HIDEFIGHT1000','SNIPER1000','LEGEND1000',
+  'MYTH1000','GOD1000','TITAN1000','OVERLORD1000','SOVEREIGN1000',
+  'EMPEROR1000','MONARCH1000','KING1000','QUEEN1000','ROYAL1000',
+  'CROWN1000','THRONE1000','EMPIRE1000','DYNASTY1000','LEGACY1000',
+  'ETERNAL1000','INFINITE1000','ULTIMATE1000','SUPREME1000','ALMIGHTY1000',
+  'OMNIPOTENT1000','DIVINE1000','SACRED1000','HOLY1000','CURSED1000',
+  'DAMNED1000','FORSAKEN1000','ABANDONED1000','LOST1000'
+].forEach(code => {
+  PROMO_CODES[code] = { coins: 1000, exp: 0, msg: 'A legendary reward: 1000 coins!' };
+});
+
+/* ============================================================
+   DONATE PRODUCTS
+   ============================================================ */
+const DONATE_PRODUCTS = [
+  { id: 'pack-100',  coins: 100,  usd: '0.49', rub: '59',  tag: 'STARTER PACK' },
+  { id: 'pack-500',  coins: 500,  usd: '1.49', rub: '189', tag: 'POPULAR' },
+  { id: 'pack-1000', coins: 1000, usd: '8.99', rub: '689', tag: 'BEST VALUE' }
+];
+
+/* ============================================================
+   ENEMIES
+   ============================================================ */
+const ENEMY_FALLBACK_SVG = buildFighterSVG({
+  hoodColor: '#0a0812', edgeColor: '#2a1a3a', eyeColor: '#c8404e', weapon: WEAPONS.knife
+});
+const ENEMY_FALLBACK_URI = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ENEMY_FALLBACK_SVG);
+
+const ENEMY_AVATAR_IMG = `<img src="Ub.png" alt="Killer"
+  onerror="this.onerror=null;this.src='${ENEMY_FALLBACK_URI}';" />`;
+
+const ENEMY_CHARACTERS = [
+  { id: 'shadow',      name: 'Shadow',      avatar: ENEMY_AVATAR_IMG },
+  { id: 'butcher',     name: 'Butcher',     avatar: ENEMY_AVATAR_IMG },
+  { id: 'executioner', name: 'Executioner', avatar: ENEMY_AVATAR_IMG },
+  { id: 'clown',       name: 'Clown',       avatar: ENEMY_AVATAR_IMG },
+  { id: 'reaper',      name: 'Reaper',      avatar: ENEMY_AVATAR_IMG },
+  { id: 'hammerer',    name: 'Hammerer',    avatar: ENEMY_AVATAR_IMG }
+];
+
+/* ============================================================
+   SPOTS
+   ============================================================ */
+const SPOTS = [
+  { key: 'wardrobe', name: 'Wardrobe' },
+  { key: 'bed',      name: 'Under bed' },
+  { key: 'curtain',  name: 'Behind curtain' },
+  { key: 'box',      name: 'In the box' }
+];
+
+/* ============================================================
+   BALANCE
+   ============================================================ */
+const PLAYER_CHECKS = 2;
+const BOT_CHECKS    = 2;
+const SEEKER_CHANCE = 0.30;
+const SHOT_CHANCE   = 0.40;
+
+const REWARDS = {
+  hiderWin:  { coins: 5, exp: 12.9 },
+  seekerWin: { coins: 2, exp: 5.0 }
+};
+
+/* ============================================================
+   STATS
+   ============================================================ */
+const STATS_KEY = 'hide_and_fight_v10';
+let stats = { coins: 0, exp: 0, owned: [], active: null, usedPromos: [], nickname: '' };
+
+function loadStats() {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      stats.coins = Number(p.coins) || 0;
+      stats.exp   = Number(p.exp) || 0;
+      stats.owned = Array.isArray(p.owned) ? p.owned.filter(id => id !== 'default' && HEROES[id]) : [];
+      stats.active = (p.active && stats.owned.includes(p.active)) ? p.active : null;
+      stats.usedPromos = Array.isArray(p.usedPromos) ? p.usedPromos : [];
+      stats.nickname = typeof p.nickname === 'string' ? p.nickname : '';
+    }
+  } catch (e) {}
+}
+
+function saveStats() {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) {}
+}
+
+function updateStatsUI() {
+  document.getElementById('stat-coins').textContent = stats.coins;
+  document.getElementById('stat-exp').textContent = stats.exp.toFixed(1);
+  document.getElementById('shop-coins').textContent = stats.coins;
+  document.getElementById('donate-coins').textContent = stats.coins;
+  const nickEl = document.getElementById('menu-nickname-text');
+  if (nickEl) nickEl.textContent = stats.nickname || 'PLAYER';
+}
+
+function addReward(coins, exp) {
+  stats.coins += coins; stats.exp += exp; saveStats(); updateStatsUI();
+}
+
+function getActiveHero() {
+  return stats.active ? (HEROES[stats.active] || null) : null;
+}
+
+/* ============================================================
+   SAVE CODE
+   ============================================================ */
+function encodeSave() {
+  const payload = {
+    v: 1,
+    coins: stats.coins,
+    exp: Number(stats.exp.toFixed(2)),
+    owned: stats.owned,
+    active: stats.active,
+    usedPromos: stats.usedPromos,
+    nickname: stats.nickname
+  };
+  const json = JSON.stringify(payload);
+  const sum = json.split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+  const final = { ...payload, _c: sum };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(final))));
+}
+
+function decodeSave(code) {
+  const clean = code.trim().replace(/\s+/g, '');
+  const json = decodeURIComponent(escape(atob(clean)));
+  const data = JSON.parse(json);
+  const sumCheck = data._c;
+  delete data._c;
+  const recompute = JSON.stringify(data).split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+  if (sumCheck !== undefined && sumCheck !== recompute) throw new Error('checksum');
+  return data;
+}
+
+function showToast(msg, isError, isGood) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('error', 'good');
+  if (isError) t.classList.add('error');
+  if (isGood) t.classList.add('good');
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   NICKNAME
+   ============================================================ */
+const NICK_RE = /^[A-Za-zА-Яа-я0-9_\-]{3,16}$/;
+
+function openNicknameScreen(editMode) {
+  const input = document.getElementById('nick-input');
+  const title = document.getElementById('nick-title');
+  const sub   = document.getElementById('nick-sub');
+
+  if (editMode) {
+    title.textContent = 'CHANGE YOUR NAME?';
+    sub.textContent = 'The darkness already knows you. Give it a new name to fear.';
+    input.value = stats.nickname || '';
+  } else {
+    title.textContent = "WHAT'S YOUR NAME?";
+    sub.textContent = 'The darkness must know who it hunts tonight…';
+    input.value = '';
+  }
+
+  showScreen('screen-nickname');
+  setTimeout(() => input.focus(), 200);
+}
+
+function confirmNickname() {
+  const input = document.getElementById('nick-input');
+  const raw = (input.value || '').trim();
+
+  if (!raw || !NICK_RE.test(raw)) {
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    showToast('3–16 chars · letters, numbers, _ -', true);
+    return;
+  }
+
+  stats.nickname = raw;
+  saveStats();
+  updateStatsUI();
+
+  showToast('Welcome, ' + raw + '!', false, true);
+  showScreen('screen-menu');
+
+  // Restart scary logo loop if it wasn't running
+  if (!window._scaryLoopStarted) {
+    window._scaryLoopStarted = true;
+    startScaryLogoLoop();
+  }
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+   ============================================================ */
+function openExportModal() {
+  const code = encodeSave();
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <h3>EXPORT SAVE</h3>
+    <p>
+      Copy this code and save it somewhere safe — for example, in
+      <b>Telegram → Saved Messages</b>, a note, or a text file.
+      Paste it back any time with <b>IMPORT</b> after an update.
+    </p>
+    <textarea id="save-code-area" readonly>${code}</textarea>
+    <div class="modal-actions">
+      <button class="btn primary" id="modal-copy">COPY</button>
+      <button class="btn ghost" id="modal-close">CLOSE</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('show');
+
+  document.getElementById('modal-copy').addEventListener('click', async () => {
+    const area = document.getElementById('save-code-area');
+    area.select();
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast('Code copied!', false, true);
+    } catch (e) {
+      try { document.execCommand('copy'); showToast('Code copied!', false, true); }
+      catch (e2) { showToast('Copy failed — select manually', true); }
+    }
+  });
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+}
+
+function openImportModal() {
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <h3>IMPORT SAVE</h3>
+    <p>
+      Paste the save code you previously exported (for example, from
+      <b>Telegram → Saved Messages</b>). Your current progress will be replaced.
+    </p>
+    <textarea id="import-code-area" placeholder="Paste your save code here…"></textarea>
+    <div class="modal-actions">
+      <button class="btn primary" id="modal-load">LOAD</button>
+      <button class="btn ghost" id="modal-close">CANCEL</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('show');
+  setTimeout(() => document.getElementById('import-code-area').focus(), 100);
+
+  document.getElementById('modal-load').addEventListener('click', () => {
+    const raw = document.getElementById('import-code-area').value;
+    if (!raw || !raw.trim()) { showToast('Empty code', true); return; }
+    try {
+      const data = decodeSave(raw);
+      stats.coins  = Number(data.coins) || 0;
+      stats.exp    = Number(data.exp) || 0;
+      stats.owned  = Array.isArray(data.owned) ? data.owned.filter(id => id !== 'default' && HEROES[id]) : [];
+      stats.active = (data.active && stats.owned.includes(data.active)) ? data.active : null;
+      stats.usedPromos = Array.isArray(data.usedPromos) ? data.usedPromos : [];
+      stats.nickname = typeof data.nickname === 'string' ? data.nickname : '';
+
+      saveStats();
+      updateStatsUI();
+      renderShop();
+      renderInventory();
+      closeModal();
+      showToast('Save loaded!', false, true);
+
+      if (!stats.nickname) {
+        setTimeout(() => openNicknameScreen(false), 400);
+      }
+    } catch (e) {
+      showToast('Invalid save code', true);
+    }
+  });
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('show');
+  document.getElementById('modal-content').innerHTML = '';
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let game = {
+  role: null, mySpot: null, hiderSpot: null,
+  opponent: '', opponentChar: null,
+  checksLeft: PLAYER_CHECKS,
+  locked: true, over: false, shotUsed: false
+};
+
+let roundToken = 0;
+let roleTimeout = null;
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+const $ = (s) => document.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === id));
+}
+function setStatus(t) { $('#hud-status').textContent = t; }
+function setLog(t)    { $('#log').textContent = t; }
+
+function openDonate(fromScreen) {
+  updateStatsUI();
+  renderDonate();
+  showScreen('screen-donate');
+}
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+async function runLoading() {
+  const fill = document.getElementById('load-fill');
+  const vord = document.getElementById('vordeferst');
+  const status = document.getElementById('load-status');
+  const messages = [
+    'Booting…',
+    'Waking the dark…',
+    'Sharpening blades…',
+    'Dimming the lights…',
+    'Hiding in shadows…',
+    'Ready.'
+  ];
+
+  const total = 6000;
+  const start = Date.now();
+  let lastIdx = -1;
+  let vordShown = false;
+
+  await new Promise((resolve) => {
+    const iv = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const p = Math.min(1, elapsed / total);
+      fill.style.width = (p * 100).toFixed(1) + '%';
+
+      const idx = Math.min(messages.length - 1, Math.floor(p * messages.length));
+      if (idx !== lastIdx) { lastIdx = idx; status.textContent = messages[idx]; }
+
+      if (p > 0.42 && !vordShown) { vordShown = true; vord.classList.add('show'); }
+
+      if (p >= 1) { clearInterval(iv); resolve(); }
+    }, 40);
+  });
+
+  await sleep(700);
+
+  if (!stats.nickname) {
+    openNicknameScreen(false);
+  } else {
+    showScreen('screen-menu');
+    window._scaryLoopStarted = true;
+    startScaryLogoLoop();
+  }
+}
+
+function triggerScaryLogo() {
+  const el = document.getElementById('logo-icon');
+  if (!el) return;
+  el.innerHTML = ICONS.logoScary;
+  el.classList.add('scary');
+  setTimeout(() => {
+    el.innerHTML = ICONS.logo;
+    el.classList.remove('scary');
+  }, 2200);
+}
+
+function startScaryLogoLoop() {
+  const tick = () => {
+    const delay = randInt(7000, 16000);
+    setTimeout(() => {
+      if (document.getElementById('screen-menu').classList.contains('active')) {
+        triggerScaryLogo();
+      }
+      tick();
+    }, delay);
+  };
+  tick();
+}
+
+/* ============================================================
+   ROOM
+   ============================================================ */
+function renderRoom(onClick) {
+  const room = $('#room');
+  room.innerHTML = '';
+  SPOTS.forEach((spot, i) => {
+    const el = document.createElement('button');
+    el.className = 'spot';
+    el.innerHTML = `<span>${ICONS[spot.key]}</span><span class="spot-name">${spot.name}</span>`;
+    el.addEventListener('click', () => onClick(i, el));
+    room.appendChild(el);
+  });
+}
+function spotEl(i) { return document.querySelectorAll('.spot')[i]; }
+
+/* ============================================================
+   PROMO CODE
+   ============================================================ */
+function applyPromo() {
+  const input = document.getElementById('promo-input');
+  if (!input) return;
+  const code = (input.value || '').trim().toUpperCase();
+
+  if (!code) { showToast('Enter a promo code', true); return; }
+
+  const reward = PROMO_CODES[code];
+  if (!reward) { showToast('Invalid promo code', true); return; }
+
+  if (stats.usedPromos.includes(code)) {
+    showToast('Code already used', true);
+    return;
+  }
+
+  stats.coins += reward.coins;
+  stats.exp   += reward.exp;
+  stats.usedPromos.push(code);
+  saveStats();
+  updateStatsUI();
+
+  input.value = '';
+  showToast(reward.msg || 'Promo applied!', false, true);
+
+  const hint = document.getElementById('promo-hint');
+  if (hint) {
+    hint.textContent = `Codes used: ${stats.usedPromos.length} / ${Object.keys(PROMO_CODES).length}`;
+  }
+}
+
+/* ============================================================
+   SHOP
+   ============================================================ */
+function renderShop() {
+  const grid = $('#shop-grid');
+  grid.innerHTML = '';
+
+  const donateCta = document.createElement('div');
+  donateCta.className = 'donate-cta';
+  donateCta.innerHTML = `
+    <div class="donate-icon">${ICONS.heart}</div>
+    <div class="donate-text">
+      <div class="donate-label">DONATE</div>
+      <div class="donate-sub">Support the dev · Promo codes &amp; coin packs</div>
+    </div>
+    <div class="donate-arrow">→</div>
+  `;
+  donateCta.addEventListener('click', () => {
+    openDonate('shop');
+  });
+  grid.appendChild(donateCta);
+
+  SHOP_ORDER.forEach((id) => {
+    const hero = HEROES[id];
+    const owned = stats.owned.includes(id);
+    const canBuy = stats.coins >= hero.price;
+
+    const card = document.createElement('div');
+    card.className = 'hero-card' + (owned ? ' owned' : '');
+    card.innerHTML = `
+      <div class="hero-avatar">${hero.avatar}</div>
+      <div class="hero-info">
+        <div class="hero-name">${hero.name}</div>
+        <div class="hero-role-tag ${hero.roleKey === 'hider' ? 'hider' : ''}">${hero.role}</div>
+        <div class="hero-desc">${hero.desc}</div>
+      </div>
+      <div class="hero-action"></div>
+    `;
+    const action = card.querySelector('.hero-action');
+    if (owned) {
+      const tag = document.createElement('div');
+      tag.style.cssText = 'font-size:11px; color:#6ac888; font-weight:800; letter-spacing:1.5px;';
+      tag.textContent = 'OWNED';
+      action.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary';
+      btn.disabled = !canBuy;
+      btn.innerHTML = `<span class="price-tag">${ICONS.coin} ${hero.price}</span>`;
+      btn.addEventListener('click', () => buyHero(id));
+      action.appendChild(btn);
+    }
+    grid.appendChild(card);
+  });
+}
+
+function buyHero(id) {
+  const hero = HEROES[id];
+  if (stats.owned.includes(id)) return;
+  if (stats.coins < hero.price) return;
+  stats.coins -= hero.price;
+  stats.owned.push(id);
+  stats.active = id;
+  saveStats();
+  updateStatsUI();
+  renderShop();
+  renderInventory();
+}
+
+/* ============================================================
+   DONATE
+   ============================================================ */
+function renderDonate() {
+  const list = document.getElementById('donate-list');
+  list.innerHTML = '';
+
+  const promo = document.createElement('div');
+  promo.className = 'promo-section';
+  promo.innerHTML = `
+    <div class="promo-title">
+      ${ICONS.ticket}
+      <span>PROMO CODE</span>
+    </div>
+    <div class="promo-desc">
+      Got a code? Redeem it here for free coins. Each code works once per save.
+    </div>
+    <div class="promo-row">
+      <input id="promo-input" type="text" maxlength="24" placeholder="ENTER CODE" autocomplete="off" spellcheck="false" autocapitalize="characters"/>
+      <button class="btn primary" id="promo-apply">APPLY</button>
+    </div>
+    <div class="promo-hint" id="promo-hint">Codes used: ${stats.usedPromos.length} / ${Object.keys(PROMO_CODES).length}</div>
+  `;
+  list.appendChild(promo);
+
+  promo.querySelector('#promo-apply').addEventListener('click', applyPromo);
+  const input = promo.querySelector('#promo-input');
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); applyPromo(); }
+  });
+
+  DONATE_PRODUCTS.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = 'donate-card';
+    card.dataset.id = p.id;
+    card.innerHTML = `
+      <div class="donate-icon">${ICONS.coin}</div>
+      <div class="donate-info">
+        <div class="donate-amount">
+          <span>${p.coins}</span>
+          <span style="font-size:14px; letter-spacing:2px; color:#7a6558; font-family:'Special Elite', monospace;">COINS</span>
+        </div>
+        <div class="donate-prices">
+          <span class="price-usd">$${p.usd}</span>
+          <span class="sep">|</span>
+          <span class="price-rub">${p.rub} ₽</span>
+        </div>
+        <div class="donate-tag">${p.tag}</div>
+      </div>
+      <button class="btn primary donate-buy" tabindex="-1">BUY</button>
+    `;
+    card.addEventListener('click', () => showDonateContact(p.id));
+    list.appendChild(card);
+  });
+}
+
+function showDonateContact(productId) {
+  const p = DONATE_PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <h3>COMPLETE PURCHASE</h3>
+    <p class="center" style="font-size:13px; color:#b8a89a;">
+      <b>${p.coins} coins</b> — $${p.usd} <span style="opacity:.6;">/</span> ${p.rub} ₽
+    </p>
+    <p class="center" style="font-size:12px; color:#7a6558;">
+      To complete this purchase, message us on Telegram and mention the pack you want to buy.
+    </p>
+    <div class="tg-link-wrap">
+      <a class="tg-link" href="https://t.me/HideFight" target="_blank" rel="noopener">@HideFight</a>
+    </div>
+    <p class="center" style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:#5a4038;">
+      Payment will be arranged in the chat
+    </p>
+    <div class="modal-actions">
+      <button class="btn primary" id="modal-close">GOT IT</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('show');
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+}
+
+/* ============================================================
+   INVENTORY
+   ============================================================ */
+function renderInventory() {
+  const grid = $('#inv-grid');
+  grid.innerHTML = '';
+
+  if (stats.owned.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">?</div>
+        <div class="empty-text">Nothing here yet</div>
+        <p style="font-size:12px; color:#7a6558; max-width:260px; line-height:1.5;">
+          Visit the shop to buy a fighter. Until then you roam as the Nameless.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  stats.owned.forEach((id) => {
+    const hero = HEROES[id];
+    if (!hero) return;
+    const active = stats.active === id;
+
+    const card = document.createElement('div');
+    card.className = 'hero-card owned' + (active ? ' active' : '');
+    card.innerHTML = `
+      <div class="hero-avatar">${hero.avatar}</div>
+      <div class="hero-info">
+        <div class="hero-name">${hero.name}</div>
+        <div class="hero-role-tag ${hero.roleKey === 'hider' ? 'hider' : ''}">${hero.role}</div>
+        <div class="hero-desc">${hero.desc}</div>
+      </div>
+      <div class="hero-action"></div>
+    `;
+    const action = card.querySelector('.hero-action');
+
+    if (active) {
+      const tag = document.createElement('div');
+      tag.style.cssText = 'font-size:11px; color:#6ac888; font-weight:800; letter-spacing:1.5px;';
+      tag.textContent = '✓ EQUIPPED';
+      action.appendChild(tag);
+
+      const unBtn = document.createElement('button');
+      unBtn.className = 'btn ghost';
+      unBtn.textContent = 'UNEQUIP';
+      unBtn.style.padding = '8px 12px';
+      unBtn.style.fontSize = '10px';
+      unBtn.style.letterSpacing = '1.5px';
+      unBtn.addEventListener('click', () => {
+        stats.active = null;
+        saveStats();
+        renderInventory();
+        renderShop();
+      });
+      action.appendChild(unBtn);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary';
+      btn.textContent = 'EQUIP';
+      btn.style.padding = '10px 16px';
+      btn.style.fontSize = '11px';
+      btn.addEventListener('click', () => {
+        stats.active = id;
+        saveStats();
+        renderInventory();
+        renderShop();
+      });
+      action.appendChild(btn);
+    }
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   MATCHMAKING
+   ============================================================ */
+async function startMatchmaking() {
+  showScreen('screen-search');
+  game.opponent = randomNickname();
+  game.opponentChar = ENEMY_CHARACTERS[Math.floor(Math.random() * ENEMY_CHARACTERS.length)];
+
+  const duration = randInt(10400, 39200);
+  await sleep(duration);
+
+  rollRole();
+}
+
+/* ============================================================
+   VS + ROLE
+   ============================================================ */
+function rollRole() {
+  clearTimeout(roleTimeout);
+
+  const role = Math.random() < SEEKER_CHANCE ? 'seeker' : 'hider';
+  game.role = role;
+
+  const hero = getActiveHero();
+
+  const myNickEl = $('#vs-my-nick');
+  const myHeroEl = $('#vs-my-hero');
+
+  if (hero) {
+    $('#vs-my-avatar').innerHTML = hero.avatar;
+    myNickEl.classList.remove('unknown');
+  } else {
+    $('#vs-my-avatar').innerHTML = '<div class="avatar-unknown">?</div>';
+    myNickEl.classList.add('unknown');
+  }
+
+  myNickEl.textContent = stats.nickname || 'Nameless';
+  myHeroEl.textContent = hero ? hero.name : 'Nameless';
+
+  $('#vs-enemy-avatar').innerHTML = game.opponentChar.avatar;
+  $('#vs-enemy-nick').textContent = game.opponentChar.name;
+  $('#vs-enemy-hero').textContent = game.opponent;
+
+  const tag = $('#role-tag');
+  tag.classList.remove('hider', 'seeker');
+  if (role === 'hider') {
+    tag.classList.add('hider');
+    tag.innerHTML = `${ICONS.hider}<span>YOU HIDE</span>`;
+    const hasShot = hero && hero.ability === 'shot';
+    $('#role-desc').textContent =
+      `It will search only 2 of the 4 spots. Pick wisely — if found, you die.` +
+      (hasShot ? ' Or shoot first.' : '');
+  } else {
+    tag.classList.add('seeker');
+    tag.innerHTML = `${ICONS.seeker}<span>YOU SEEK</span>`;
+    $('#role-desc').textContent =
+      `It hides in one of the four spots. You may check only 2. If you miss — it escapes.`;
+  }
+
+  showScreen('screen-role');
+
+  roleTimeout = setTimeout(() => {
+    if ($('#screen-role').classList.contains('active')) startRound();
+  }, 2600);
+}
+
+/* ============================================================
+   ROUND START
+   ============================================================ */
+async function startRound() {
+  const token = ++roundToken;
+  const hero = getActiveHero();
+
+  game.mySpot = null;
+  game.hiderSpot = randInt(0, SPOTS.length - 1);
+  game.checksLeft = PLAYER_CHECKS;
+  game.over = false;
+  game.locked = true;
+  game.shotUsed = false;
+
+  showScreen('screen-game');
+  renderRoom(onSpotClick);
+  setLog('');
+  $('#hud-opponent').innerHTML = `${game.opponentChar.name} · <b>${game.opponent}</b>`;
+
+  const abilityBar = $('#ability-bar');
+  if (role_has_shot(hero)) {
+    abilityBar.style.display = 'flex';
+    $('#btn-shoot').disabled = true;
+    $('#btn-shoot').textContent = `SHOOT · ${Math.round(SHOT_CHANCE*100)}%`;
+  } else {
+    abilityBar.style.display = 'none';
+  }
+
+  if (game.role === 'hider') {
+    setStatus('Pick a hiding spot. It is already close…');
+    game.locked = false;
+  } else {
+    setStatus('It hides somewhere in the room…');
+    await sleep(randInt(4000, 9000));
+    if (token !== roundToken) return;
+    setStatus(`Search! Attempts left: ${game.checksLeft} of ${SPOTS.length}`);
+    game.locked = false;
+  }
+}
+
+function role_has_shot(hero) {
+  return game.role === 'hider' && hero && hero.ability === 'shot';
+}
+
+/* ============================================================
+   SPOT CLICK
+   ============================================================ */
+function onSpotClick(index, el) {
+  if (game.locked || game.over) return;
+  if (el.classList.contains('checked')) return;
+
+  if (game.role === 'hider') {
+    game.mySpot = index;
+    game.locked = true;
+    el.classList.add('me');
+    setStatus('You are hidden. Hold your breath…');
+    setLog('Footsteps are getting closer…');
+
+    const hero = getActiveHero();
+    if (hero && hero.ability === 'shot') $('#btn-shoot').disabled = false;
+
+    seekerTurn(roundToken);
+
+  } else {
+    game.checksLeft--;
+    if (index === game.hiderSpot) {
+      el.classList.add('found');
+      game.locked = true;
+      setLog(`You found it. ${game.opponent} was here.`);
+      endGame(true, 'seeker', `You dragged ${game.opponent} out of hiding.`);
+    } else {
+      el.classList.add('checked');
+      if (game.checksLeft <= 0) {
+        game.locked = true;
+        spotEl(game.hiderSpot).classList.add('found');
+        setLog('Empty. It was not here…');
+        endGame(false, 'seeker', `${game.opponent} survived the search. You lost it.`);
+      } else {
+        setStatus(`Empty. Attempts left: ${game.checksLeft} of ${SPOTS.length}`);
+      }
+    }
+  }
+}
+
+/* ============================================================
+   SHOT
+   ============================================================ */
+function useShot() {
+  if (game.over || game.shotUsed) return;
+  const hero = getActiveHero();
+  if (!role_has_shot(hero)) return;
+
+  game.shotUsed = true;
+  $('#btn-shoot').disabled = true;
+
+  setLog('You raise your rifle…');
+  setStatus('Shot fired!');
+
+  const success = Math.random() < SHOT_CHANCE;
+
+  setTimeout(() => {
+    if (success) {
+      endGame(true, 'hider', `Clean shot. ${game.opponent} is not moving anymore.`);
+    } else {
+      game.locked = true;
+      setLog('Missed. It heard the shot.');
+      setTimeout(() => endGame(false, 'hider', `Missed. ${game.opponent} found you by the sound.`), 900);
+    }
+  }, 700);
+}
+
+/* ============================================================
+   BOT SEEKER TURN
+   ============================================================ */
+async function seekerTurn(token) {
+  const order = shuffle([0, 1, 2, 3]).slice(0, BOT_CHECKS);
+
+  for (const idx of order) {
+    await sleep(randInt(900, 1500));
+    if (token !== roundToken || game.over) return;
+
+    const el = spotEl(idx);
+    el.classList.add('checked');
+    setLog(`${game.opponent} checks: ${SPOTS[idx].name}…`);
+    await sleep(450);
+    if (token !== roundToken || game.over) return;
+
+    if (idx === game.mySpot) {
+      el.classList.add('found');
+      setLog(`It found you in the ${SPOTS[idx].name}!`);
+      endGame(false, 'hider', `${game.opponent} dragged you out of hiding.`);
+      return;
+    }
+  }
+
+  if (game.over) return;
+  spotEl(game.mySpot).classList.add('me');
+  setLog('Footsteps faded. It left.');
+  endGame(true, 'hider', 'You survived the search and stayed alive.');
+}
+
+/* ============================================================
+   END
+   ============================================================ */
+function endGame(win, role, text, customIcon) {
+  game.over = true;
+  game.locked = true;
+  $('#btn-shoot').disabled = true;
+
+  setTimeout(() => {
+    const icon = $('#result-icon');
+    icon.classList.remove('win', 'lose');
+    icon.classList.add(win ? 'win' : 'lose');
+    icon.innerHTML = win ? (customIcon || ICONS.trophy) : ICONS.skull;
+
+    const title = $('#result-title');
+    title.classList.remove('win', 'lose');
+    title.classList.add(win ? 'win' : 'lose');
+    title.textContent = win ? 'SURVIVED' : 'DEAD';
+    $('#result-desc').textContent = text;
+
+    const rewardBox = $('#reward-box');
+    rewardBox.innerHTML = '';
+
+    if (win) {
+      const r = role === 'hider' ? REWARDS.hiderWin : REWARDS.seekerWin;
+      addReward(r.coins, r.exp);
+      rewardBox.innerHTML = `
+        <div class="reward-chip coins">${ICONS.coin}<span>+${r.coins}</span></div>
+        <div class="reward-chip exp">${ICONS.star}<span>+${r.exp.toFixed(1)} XP</span></div>
+      `;
+    } else {
+      rewardBox.innerHTML = `<div style="opacity:.4; font-size:12px; letter-spacing:2px;">NOTHING</div>`;
+    }
+
+    showScreen('screen-result');
+  }, 1100);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+$('#logo-icon').innerHTML = ICONS.logo;
+document.getElementById('load-logo').innerHTML = ICONS.logo;
+document.getElementById('nick-logo').innerHTML = ICONS.logoScary;
+$('#coin-icon').innerHTML = ICONS.coin;
+$('#exp-icon').innerHTML  = ICONS.star;
+$('#shop-coin-icon').innerHTML = ICONS.coin;
+$('#donate-coin-icon').innerHTML = ICONS.coin;
+
+loadStats();
+updateStatsUI();
+renderShop();
+renderInventory();
+renderDonate();
+
+runLoading();
+
+/* ============================================================
+   HANDLERS
+   ============================================================ */
+$('#btn-play').addEventListener('click', startMatchmaking);
+
+$('#btn-shop').addEventListener('click', () => {
+  updateStatsUI(); renderShop(); showScreen('screen-shop');
+});
+$('#btn-shop-back').addEventListener('click', () => showScreen('screen-menu'));
+
+$('#btn-inventory').addEventListener('click', () => {
+  renderInventory(); showScreen('screen-inventory');
+});
+$('#btn-inv-back').addEventListener('click', () => showScreen('screen-menu'));
+
+$('#btn-donate-back').addEventListener('click', () => {
+  renderShop();
+  showScreen('screen-shop');
+});
+
+$('#menu-coins-chip').addEventListener('click', () => openDonate('menu'));
+$('#shop-coins-chip').addEventListener('click', () => openDonate('shop'));
+
+$('#btn-nick-confirm').addEventListener('click', confirmNickname);
+$('#nick-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmNickname(); }
+});
+$('#menu-nickname').addEventListener('click', () => openNicknameScreen(true));
+
+$('#btn-export').addEventListener('click', openExportModal);
+$('#btn-import').addEventListener('click', openImportModal);
+
+$('#btn-shoot').addEventListener('click', useShot);
+
+$('#btn-again').addEventListener('click', () => {
+  roundToken++; clearTimeout(roleTimeout); startMatchmaking();
+});
+
+$('#btn-menu').addEventListener('click', () => {
+  roundToken++; clearTimeout(roleTimeout); showScreen('screen-menu');
+});
+
+$('#modal-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-backdrop') closeModal();
+});
+</script>
+</body>
+</html>
